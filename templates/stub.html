@@ -1,18 +1,72 @@
-<!-- Extending the predefined project layout -->
-{% extends "layouts/base.html" %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Song Recommender</title>
+  </head>
+  <body>
+    <h1>Song Recommender</h1>
+    <form id="song-form">
+      <label for="song-title">Enter a song title:</label>
+      <input type="text" id="song-title" name="song-title"><br><br>
+      <button type="submit">Submit</button>
+    </form>
+    <div id="recommendations"></div>
+    <script>
+      // Load the song dataset into a pandas dataframe
+      async function run() {
+        // Load the song dataset into a pandas dataframe
+        const song_df = await pandas.read_csv("songdata.csv");
+      
+        // Replace commas with empty strings in the "Length (Duration)" column
+        song_df['Length (Duration)'] = song_df['Length (Duration)'].str.replace(',', '');
+      
+        // Convert the "Length (Duration)" column to floats
+        song_df['Length (Duration)'] = song_df['Length (Duration)'].astype(float);
+      
+        // Define the features to use for similarity calculation
+        const features = ['Beats Per Minute (BPM)', 'Energy', 'Danceability', 'Loudness (dB)', 
+                        'Liveness', 'Valence', 'Length (Duration)', 'Acousticness', 'Speechiness'];
+      
+        // Define a function to recommend similar songs based on a given song
+        function recommendSimilarSongs(title) {
+          // Find the index of the song with the given title
+          const index = song_df[song_df['Title'] === title].index.values[0];
+      
+          // Create an array to hold the recommended songs and their features
+          const recommendations = [];
+      
+          // Calculate the cosine similarity between the given song and all other songs in the dataset
+          const similarities = cosine_similarity(song_df.loc[:, features], song_df.loc[index, features].to_numpy().reshape(1, -1));
 
-<!- This variable sets name of browser tab  -->
-{% set project = "Stubby" %}
-
-<!- This is a replacement block for Body in base.html -->
-{% block body %}
-    <!- Try building a new body here, bootstrap is a wise choice ->
-    <div class="px-5 py-5 mx-auto">
-        <h1 class="text-primary"><strong>Stubby Body</strong></h1>
-        <p class="text-secondary">Put your name here</p>
-    </div>
-{% endblock %}
-
-<!- This is turning off birds background from base.html -->
-{% block background %}
-{% endblock %}
+      
+          // Get the indices of the top 5 most similar songs
+          const top_indices = similarities.argsort(axis=0)[-6:-1].flatten()[::-1];
+      
+          // Add the recommended songs and their features to the recommendations array
+          for (let i = 0; i < 5; i++) {
+            const song = song_df.loc[top_indices[i], 'Title'];
+            const artist = song_df.loc[top_indices[i], 'Artist'];
+            const features_str = features.map(feature => `${feature}: ${song_df.loc[top_indices[i], feature]}`).join('<br>');
+            recommendations.push(`<p>${i + 1}. ${song} by ${artist}</p><p>Features:</p>${features_str}`);
+          }
+      
+          // Display the recommendations in the HTML
+          const recommendations_div = document.getElementById('recommendations');
+          recommendations_div.innerHTML = recommendations.join('');
+        }
+      
+        // Handle the form submission
+        const form = document.getElementById('song-form');
+        form.addEventListener('submit', (event) => {
+          event.preventDefault(); // prevent the form from submitting
+          const title = document.getElementById('song-title').value;
+          recommendSimilarSongs(title);
+        });
+      }
+      
+      run();
+      
+    </script>
+  </body>
+</html>
