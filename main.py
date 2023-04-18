@@ -47,6 +47,22 @@ def activate_job():  # activate these items
     initUsers()
     initPlayers()
 
+import os
+import pandas as pd
+from flask import render_template
+
+@app.route('/songdata')
+def songdata():
+    # Path to the CSV file
+    csv_path = os.path.join(app.static_folder, 'songdata.csv')
+
+    # Read the CSV file into a pandas dataframe
+    df = pd.read_csv(csv_path)
+
+    # Render the dataframe as an HTML table using Jinja2
+    return render_template('songdata.html', table=df.to_html(index=False))
+
+
 # this runs the application on the development server
 if __name__ == "__main__":
     # change name for testing
