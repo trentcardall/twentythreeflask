@@ -4,7 +4,7 @@ import threading
 from flask import render_template  # import render_template from "public" flask libraries
 
 # import "packages" from "this" project
-from __init__ import app,db  # Definitions initialization
+from __init__ import app, db  # Definitions initialization
 from model.jokes import initJokes
 from model.users import initUsers
 from model.players import initPlayers
@@ -22,7 +22,15 @@ from api.song_data import songs_api
 # setup App pages
 from projects.projects import app_projects # Blueprint directory import projects definition
 
+import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///song_data.db'
+db = SQLAlchemy(app)
+
+# Rest of your code...
 
 # Initialize the SQLAlchemy object to work with the Flask app instance
 db.init_app(app)
@@ -53,9 +61,6 @@ def activate_job():  # activate these items
     initJokes()
     initUsers()
     initPlayers()
-
-if __name__ == '__main__':
-    app.run()
 
 import os
 import pandas as pd
