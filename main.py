@@ -32,6 +32,7 @@ db = SQLAlchemy(app)
 
 # Rest of your code...
 
+
 # Initialize the SQLAlchemy object to work with the Flask app instance
 db.init_app(app)
 
