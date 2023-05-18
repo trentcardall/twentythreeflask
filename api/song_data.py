@@ -1,17 +1,19 @@
 from flask import Blueprint, jsonify
 import sqlite3
+import os
 
 songs_api = Blueprint('songs_api', __name__)
 
 # API endpoint to fetch all songs
 @songs_api.route('/api/songs', methods=['GET'])
 def get_songs():
-    conn = sqlite3.connect('song_data.db')
+    db_path = os.path.join(os.getcwd(), 'instance', 'volumes', 'song_data.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM songs')
     rows = cursor.fetchall()
     conn.close()
-    
+
     # Format the data as JSON
     songs = []
     for row in rows:
@@ -33,5 +35,5 @@ def get_songs():
             'popularity': row[14]
         }
         songs.append(song)
-    
+
     return jsonify(songs)
