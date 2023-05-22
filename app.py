@@ -1,13 +1,19 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-import pandas as pd
 import os
+import pandas as pd
+from flask import render_template, Flask
+from flask_sqlalchemy import SQLAlchemy
 
+# Initialize the Flask application
 app = Flask(__name__)
-db_path = os.path.join(app.instance_path, 'volumes', 'song_data.db')
+
+# Specify the path to the SQLite database
+db_path = os.path.join(os.getcwd(), 'instance', 'volumes', 'song_data.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+
+# Initialize SQLAlchemy with this Flask app
 db = SQLAlchemy(app)
 
+# Define your model schema here
 class MySongs(db.Model):
     # Define your model schema here
     # Make sure to include the necessary columns that match your CSV file
@@ -29,7 +35,6 @@ class MySongs(db.Model):
     speechiness = db.Column(db.Integer)
     popularity = db.Column(db.Integer) # Example column: an integer column
 
-
     # Additional columns can be defined here
 
     def __init__(self, title, artist, top_genre, year, bpm, energy, danceability, loudness, liveness, valence, duration, acousticness, speechiness, popularity):
@@ -48,45 +53,25 @@ class MySongs(db.Model):
         self.speechiness = speechiness
         self.popularity = popularity
 
-    def serialize(song):
-        return {
-            'id': song.id,
-            'name': song.title,
-            'top_genre': song.top_genre, 
-            'year': song.year, 
-            'bpm': song.bpm, 
-            'energy': song.energy,
-            'danceability': song.danceability, 
-            'loudness': song.loudness,
-            'liveness': song.liveness,
-            'valence': song.valence,
-            'duration': song.duration, 
-            'acousticness': song.acousticness, 
-            'speechiness': song.speechiness,  
-            'popularity': song.popularity
-
-            # Serialize additional columns as needed
-        }
+from flask import jsonify
 
 @app.route('/songdatabase')
-def populate_database():
-    # Path to the CSV file
-    csv_path = 'song_data.csv'
 
-    # Read the CSV file into a pandas DataFrame
-    df = pd.read_csv(csv_path)
+@app.route('/songdatabase')
+def songdatabase():
+    # Fetch data from the songs table into a DataFrame
+    df = pd.read_sql_table('songs', db.engine)
 
-    # Create the database tables based on the model schema
-    db.create_all()
+    # Convert the DataFrame into a list of dictionaries
+    data = df.to_dict(orient='records')
 
-    # Iterate over the rows of the DataFrame and populate the database
-    for _, row in df.iterrows():
-        model_instance = MySongs(**row)  # Create an instance of YourModel
-        db.session.add(model_instance)  # Add the instance to the session
+    # Return a JSON response
+    return jsonify(data)
 
-    db.session.commit()  # Commit the changes to the database
 
-    return 'Database created and populated'
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# this runs the application on the development server
+if __name__ == "__main__":
+    # change name for testing
+    from flask_cors import CORS
+    cors = CORS(app)
+    app.run(debug=True, host="0.0.0.0", port="8080")
